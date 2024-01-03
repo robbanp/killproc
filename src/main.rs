@@ -2,6 +2,7 @@ use clap::Parser;
 use std::process::{Command, Stdio};
 use execute::Execute;
 use colored::Colorize;
+use regex::Regex;
 
 
 #[derive(Parser, Debug)]
@@ -49,11 +50,15 @@ fn main() {
             findings.push(process);    
         }
         for proc in &findings {
+            let regex_str = format!(r"({})", _args.name);
+            let re = Regex::new(&regex_str).unwrap();
+
+            let new_text = re.replace_all(&proc.name, &_args.name.red().to_string());
             println!("{} {}, {} {}\n",
              "PID".blue(), 
              proc.pid.to_string().red(),
              "COMMAND".blue(),
-             &proc.name[..256].green(),
+             &new_text[..256].green(),
             )
         }
 
