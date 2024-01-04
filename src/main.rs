@@ -3,7 +3,7 @@ use std::process::{Command, Stdio};
 use execute::Execute;
 use colored::Colorize;
 use regex::Regex;
-use terminal_menu::{menu, button, run, mut_menu};
+use terminal_menu::{menu, button, run, mut_menu, back_button};
 
 
 #[derive(Parser, Debug)]
@@ -28,9 +28,8 @@ fn main() {
     let _args = Args::parse();
     const COMMAND_PATH: &str = "ps";
 
-    let mut command = Command::new(COMMAND_PATH);
-    
-    command.arg("--no-headers").arg("-exo").arg("pid,args");
+    let mut command = Command::new(COMMAND_PATH); 
+    command.arg("--no-headers").arg("aexo").arg("pid,args");
     command.stdout(Stdio::piped());
     let output = String::from_utf8(command.execute_output().unwrap().stdout).unwrap();
     
@@ -69,12 +68,33 @@ fn main() {
         )
     }
  */   
-    let menu = menu(
-        (0..findings.len()).map(|n| button(format!("{} - {}", findings[n].pid, &findings[n].name[..64]))).collect()
-    );
+    
+    let mut menu_collection = vec![];
+    menu_collection.push(back_button("Back"));
+    for item in &findings {
+        menu_collection.push(
+            button(format!("{} - {}", item.pid, shorten(&item.name, 64)))
+        );
+    }
+    let menu = menu(menu_collection);
 
     run(&menu);
 
-    let selected_index = mut_menu(&menu).selected_item_index();
-    println!("{:?}", findings[selected_index]);
+    if mut_menu(&menu).selected_item_name() != "Back" {
+        let selected_index = mut_menu(&menu).selected_item_index();
+        let mut command2 = Command::new("kill"); 
+        command2.arg("-9").arg(findings[selected_index - 1].pid.to_string());
+        command2.stdout(Stdio::piped());
+        let output2 = String::from_utf8(command2.execute_output().unwrap().stdout).unwrap();
+        println!("RES: {}", output2);        
+    } else {
+        println!("Exited")
+    }
+}
+
+fn shorten(text: &String, len: usize) -> String {
+    if text.len() < len {
+        return text.to_string();
+    }
+    text[..len].to_string()
 }
