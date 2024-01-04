@@ -1,8 +1,8 @@
 use clap::Parser;
 use std::process::{Command, Stdio};
 use execute::Execute;
-use colored::Colorize;
-use regex::Regex;
+
+
 use terminal_menu::{menu, button, run, mut_menu, back_button};
 
 
@@ -12,10 +12,6 @@ struct Args {
     /// Name of the process to kill
     #[arg(short, long, default_value_t = String::from("vs_code"))]
     name: String,
-
-    /// Number of times to greet
-    #[arg(short, long, default_value_t = 1)]
-    count: u8,
 }
 #[derive(Debug)]
 struct ProcessLine {
