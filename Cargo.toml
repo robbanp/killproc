@@ -10,3 +10,4 @@ clap = { version = "4.4.12", features = ["derive"] }
 colored = "2.1.0"
 execute = "0.2.13"
 regex = "1.10.2"
+terminal-menu = "3.0.0"

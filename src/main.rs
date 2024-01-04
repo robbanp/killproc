@@ -3,6 +3,7 @@ use std::process::{Command, Stdio};
 use execute::Execute;
 use colored::Colorize;
 use regex::Regex;
+use terminal_menu::{menu, button, run, mut_menu};
 
 
 #[derive(Parser, Debug)]
@@ -46,21 +47,34 @@ fn main() {
 
         if name_str.contains(&_args.name) {
             let process: ProcessLine = ProcessLine {name: name_str, pid: pid_int};
-//            println!("Row: {:?}", &process);
             findings.push(process);    
         }
-        for proc in &findings {
-            let regex_str = format!(r"({})", _args.name);
-            let re = Regex::new(&regex_str).unwrap();
+    }
+/* 
+    for proc in &findings {
+        let regex_str = format!(r"({})", _args.name);
+        let re = Regex::new(&regex_str).unwrap();
 
-            let new_text = re.replace_all(&proc.name, &_args.name.red().to_string());
-            println!("{} {}, {} {}\n",
-             "PID".blue(), 
-             proc.pid.to_string().red(),
-             "COMMAND".blue(),
-             &new_text[..256].green(),
-            )
+        let new_text = re.replace_all(&proc.name, &_args.name.red().to_string());
+        let mut parsed_text = new_text.green().to_string();
+        if parsed_text.len() > 256 {
+            parsed_text = parsed_text[..256].to_string()
         }
 
+        println!("{} {}, {} {}\n",
+         "PID".blue(), 
+         proc.pid.to_string().red(),
+         "COMMAND".blue(),
+         parsed_text,
+        )
     }
+ */   
+    let menu = menu(
+        (0..findings.len()).map(|n| button(format!("{} - {}", findings[n].pid, &findings[n].name[..64]))).collect()
+    );
+
+    run(&menu);
+
+    let selected_index = mut_menu(&menu).selected_item_index();
+    println!("{:?}", findings[selected_index]);
 }
