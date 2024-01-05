@@ -1,5 +1,5 @@
 mod helpers;
-use crate::helpers::helpers::*;
+use crate::helpers::*;
 
 use clap::Parser;
 use terminal_menu::{menu, button, run, mut_menu, back_button, label};
@@ -22,14 +22,14 @@ fn main() {
     let _args = Args::parse();
     let output = run_command("ps", vec!["--no-headers", "aexo", "pid,args"]);
     let mut findings = Vec::new(); 
-    for line in output.split("\n") {        
+    for line in output.split('\n') {        
 
-        let row_arr: Vec<&str> = line.trim_start().splitn(2, " ").collect();
+        let row_arr: Vec<&str> = line.trim_start().splitn(2, ' ').collect();
         if row_arr.len() < 2 {
             continue;
         }
         let name_str = String::from(row_arr[1]);
-        let pid_int = String::from(row_arr[0]).parse::<i32>().unwrap() as i32;
+        let pid_int = String::from(row_arr[0]).parse::<i32>().unwrap();
 
         if name_str.contains(&_args.name) {
             let process: ProcessLine = ProcessLine {name: name_str, pid: pid_int};
@@ -42,7 +42,7 @@ fn main() {
     menu_collection.push(back_button("Back"));
     for item in &findings {
         menu_collection.push(
-            button(format!("{} - {}", item.pid.to_string(), shorten(&item.name, 64)))
+            button(format!("{} - {}", item.pid, shorten(&item.name, 64)))
         );
     }
     let menu = menu(menu_collection);
