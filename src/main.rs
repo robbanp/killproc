@@ -1,10 +1,9 @@
+mod helpers;
+use crate::helpers::helpers::*;
+
 use clap::Parser;
-use std::process::{Command, Stdio};
-use execute::Execute;
-
-
-use terminal_menu::{menu, button, run, mut_menu, back_button};
-
+use terminal_menu::{menu, button, run, mut_menu, back_button, label};
+use crossterm::style::Color;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -20,16 +19,8 @@ struct ProcessLine {
 }
 
 fn main() {
-
     let _args = Args::parse();
-    const COMMAND_PATH: &str = "ps";
-
-    let mut command = Command::new(COMMAND_PATH); 
-    command.arg("--no-headers").arg("aexo").arg("pid,args");
-    command.stdout(Stdio::piped());
-    let output = String::from_utf8(command.execute_output().unwrap().stdout).unwrap();
-    
-    // println!("{}", String::from_utf8(output.stdout).unwrap());   
+    let output = run_command("ps", vec!["--no-headers", "aexo", "pid,args"]);
     let mut findings = Vec::new(); 
     for line in output.split("\n") {        
 
@@ -45,52 +36,25 @@ fn main() {
             findings.push(process);    
         }
     }
-/* 
-    for proc in &findings {
-        let regex_str = format!(r"({})", _args.name);
-        let re = Regex::new(&regex_str).unwrap();
 
-        let new_text = re.replace_all(&proc.name, &_args.name.red().to_string());
-        let mut parsed_text = new_text.green().to_string();
-        if parsed_text.len() > 256 {
-            parsed_text = parsed_text[..256].to_string()
-        }
-
-        println!("{} {}, {} {}\n",
-         "PID".blue(), 
-         proc.pid.to_string().red(),
-         "COMMAND".blue(),
-         parsed_text,
-        )
-    }
- */   
-    
     let mut menu_collection = vec![];
+    menu_collection.push(label("Select process or hit 'q' or esc!").colorize(Color::Red));
     menu_collection.push(back_button("Back"));
     for item in &findings {
         menu_collection.push(
-            button(format!("{} - {}", item.pid, shorten(&item.name, 64)))
+            button(format!("{} - {}", item.pid.to_string(), shorten(&item.name, 64)))
         );
     }
     let menu = menu(menu_collection);
 
     run(&menu);
+    let cancelled = mut_menu(&menu).canceled();
 
-    if mut_menu(&menu).selected_item_name() != "Back" {
+    if !cancelled && mut_menu(&menu).selected_item_name() != "Back" {
         let selected_index = mut_menu(&menu).selected_item_index();
-        let mut command2 = Command::new("kill"); 
-        command2.arg("-9").arg(findings[selected_index - 1].pid.to_string());
-        command2.stdout(Stdio::piped());
-        let output2 = String::from_utf8(command2.execute_output().unwrap().stdout).unwrap();
-        println!("RES: {}", output2);        
+        let output = run_command("kill", vec!["-9", &findings[selected_index - 1].pid.to_string()]);
+        println!("RES: {}", output);        
     } else {
         println!("Exited")
     }
-}
-
-fn shorten(text: &String, len: usize) -> String {
-    if text.len() < len {
-        return text.to_string();
-    }
-    text[..len].to_string()
 }
