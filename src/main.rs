@@ -2,12 +2,13 @@ mod helpers;
 use crate::helpers::*;
 
 use clap::Parser;
-use terminal_menu::{menu, button, run, mut_menu, back_button, label};
 use crossterm::style::Color;
+use terminal_menu::{back_button, button, label, menu, mut_menu, run};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    // change so -n is not needed
     /// Name of the process to kill
     #[arg(short, long, default_value_t = String::from("vs_code"))]
     name: String,
@@ -18,43 +19,54 @@ struct ProcessLine {
     name: String,
 }
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let _args = Args::parse();
-    let output = run_command("ps", vec!["--no-headers", "aexo", "pid,args"]);
-    let mut findings = Vec::new(); 
-    for line in output.split('\n') {        
-
-        let row_arr: Vec<&str> = line.trim_start().splitn(2, ' ').collect();
-        if row_arr.len() < 2 {
+    let output = run_command("ps", vec!["--no-headers", "aexo", "pid,args"])?;
+    let mut findings = Vec::new();
+    for line in output.lines() {
+        let Some((pid, name)) = line.trim_start().split_once(' ') else {
             continue;
-        }
-        let name_str = String::from(row_arr[1]);
-        let pid_int = String::from(row_arr[0]).parse::<i32>().unwrap();
+        };
+        let name_str = String::from(name);
+        let pid_int = pid.parse::<i32>()?;
 
         if name_str.contains(&_args.name) {
-            let process: ProcessLine = ProcessLine {name: name_str, pid: pid_int};
-            findings.push(process);    
+            let process: ProcessLine = ProcessLine {
+                name: name_str,
+                pid: pid_int,
+            };
+            findings.push(process);
         }
     }
 
-    let mut menu_collection = vec![];
-    menu_collection.push(label("Select process or hit 'q' or esc!").colorize(Color::Red));
-    menu_collection.push(back_button("Back"));
+    let mut menu_collection = vec![
+        label("Select process or hit 'q' or esc!").colorize(Color::Red),
+        back_button("Back"),  
+    ];
     for item in &findings {
-        menu_collection.push(
-            button(format!("{} - {}", item.pid, shorten(&item.name, 64)))
-        );
+        menu_collection.push(button(format!(
+            "{} - {}",
+            item.pid,
+            shorten(&item.name, 64)
+        )));
     }
     let menu = menu(menu_collection);
 
     run(&menu);
-    let cancelled = mut_menu(&menu).canceled();
+    let menu = mut_menu(&menu);
+    let index = menu.selected_item_index() - 1;
 
-    if !cancelled && mut_menu(&menu).selected_item_name() != "Back" {
-        let selected_index = mut_menu(&menu).selected_item_index();
-        let output = run_command("kill", vec!["-9", &findings[selected_index - 1].pid.to_string()]);
-        println!("RES: {}", output);        
-    } else {
-        println!("Exited")
+    if index == 0 || menu.canceled() {
+        println!("Exited");
+        return Ok(());
     }
+
+    if let Some(item) = findings.get(index) {
+        let output = run_command("kill", vec!["-9", &item.pid.to_string()])?;
+        println!("RES: {output}");
+    } else {
+        println!("Could not find {}", menu.selected_item_name());
+    }
+
+    return Ok(());
 }

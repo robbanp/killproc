@@ -1,16 +1,19 @@
-use std::process::{Command, Stdio};
 use execute::Execute;
+use std::process::{Command, Stdio};
 
-pub fn shorten(text: &String, len: usize) -> String {
+pub fn shorten(text: &str, len: usize) -> &str {
     if text.len() < len {
-        return text.to_string();
+        return text;
     }
-    text[..len].to_string()
+    &text[..len]
 }
 
-pub fn run_command(cmd: &str, args: Vec<&str>) -> String {
-    let mut command = Command::new(cmd); 
+pub fn run_command(cmd: &str, args: Vec<&str>) -> anyhow::Result<String> {
+    let mut command = Command::new(cmd);
     command.args(args);
     command.stdout(Stdio::piped());
-    String::from_utf8(command.execute_output().unwrap().stdout).unwrap()
+    Ok(
+        String::from_utf8(command.execute_output()?.stdout)?
+    )
+    
 }
