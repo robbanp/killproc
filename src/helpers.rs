@@ -15,5 +15,4 @@ pub fn run_command(cmd: &str, args: Vec<&str>) -> anyhow::Result<String> {
     Ok(
         String::from_utf8(command.execute_output()?.stdout)?
     )
-    
 }

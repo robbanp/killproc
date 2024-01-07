@@ -68,5 +68,5 @@ fn main() -> anyhow::Result<()> {
         println!("Could not find {}", menu.selected_item_name());
     }
 
-    return Ok(());
+    Ok(())
 }
